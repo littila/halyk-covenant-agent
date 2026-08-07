@@ -1,0 +1,437 @@
+{
+  "fx_rates": {
+    "P3": {
+      "EUR": 1.16
+    }
+  },
+  "scenarios": {
+    "B1": {
+      "account_id": "ACC-7201",
+      "related_party_threshold_pct": 20.0,
+      "related_parties": [
+        "Ertis Capital, LLP"
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {},
+      "adjustments": [
+        {
+          "kind": "reclassify",
+          "txn_id": "TXN-B1-0020",
+          "to_category": "interest_expense",
+          "source": "AUP AR-2025-0634: advisory fee is in substance bridge financing cost"
+        }
+      ],
+      "covenants": {
+        "6.1": {
+          "metric": "(revenue - opex) / interest_expense",
+          "operator": ">=",
+          "threshold": 2.0,
+          "definition_verbatim": "Коэффициент покрытия процентов = EBITDA (Выручка - Операционные расходы) / Процентные расходы, с учётом переквалификации затрат в состав Процентных расходов"
+        },
+        "6.2": {
+          "metric": "max(payroll, utilities)",
+          "operator": "<=",
+          "threshold": 1500000,
+          "definition_verbatim": "отдельными статьями признаются, по отдельности, а не в совокупности: (а) оплата труда и (б) коммунальные услуги; соблюдение проверяется по наибольшей"
+        },
+        "6.3": {
+          "metric": "related_party",
+          "operator": "<=",
+          "threshold": 500000,
+          "definition_verbatim": "совокупные платежи в адрес аффилированных и связанных сторон"
+        }
+      }
+    },
+    "B4": {
+      "account_id": "ACC-7204",
+      "related_party_threshold_pct": 30.0,
+      "related_parties": [
+        "Kazyna Capital LLP"
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {},
+      "adjustments": [
+        {
+          "kind": "exclude",
+          "txn_id": "TXN-B4-0026",
+          "source": "audit 9.1: risks pass in Jan 2026, advance deferred out of the 2025 covenant period"
+        }
+      ],
+      "covenants": {
+        "6.1": {
+          "metric": "revenue",
+          "operator": ">=",
+          "threshold": 3500000,
+          "quarter": 4,
+          "definition_verbatim": "Выручка за четвёртый финансовый квартал ... включает только Выручку, признанную в этом квартале"
+        },
+        "6.2": {
+          "metric": "capex",
+          "operator": "<=",
+          "threshold": 2000000,
+          "definition_verbatim": "расходы по статье «Капитальные затраты» ... включая переквалифицированные аудитором"
+        },
+        "6.3": {
+          "metric": "related_party",
+          "operator": "<=",
+          "threshold": 500000,
+          "definition_verbatim": "Ограниченные платежи в пользу связанных сторон по данным KYC, независимо от назначения платежа"
+        }
+      }
+    },
+    "P1": {
+      "account_id": "ACC-7801",
+      "related_party_threshold_pct": 20.0,
+      "related_parties": [
+        "Aktau Holdings LLP"
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {},
+      "adjustments": [
+        {
+          "kind": "exclude",
+          "txn_id": "TXN-P1-0045",
+          "source": "audit 7.1: services rendered 2026-01-15..2026-03-20, outside the 2025 covenant period"
+        }
+      ],
+      "covenants": {
+        "6.1": {
+          "metric": "capex / (opex + lease)",
+          "operator": "<=",
+          "threshold": 0.42,
+          "definition_verbatim": "отношение совокупных капитальных затрат к сумме операционных расходов и арендных платежей"
+        },
+        "6.2": {
+          "metric": "revenue",
+          "operator": ">=",
+          "threshold": 7100000,
+          "definition_verbatim": "совокупный объём поступлений по статье «Выручка»"
+        },
+        "6.3": {
+          "metric": "related_party",
+          "operator": "<=",
+          "threshold": 450000,
+          "definition_verbatim": "совокупный объём платежей в пользу связанных сторон"
+        }
+      }
+    },
+    "P2": {
+      "account_id": "ACC-7802",
+      "related_party_threshold_pct": 25.0,
+      "related_parties": [
+        "Zhetysu Capital Partners LLP"
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {},
+      "adjustments": [
+        {
+          "kind": "reclassify",
+          "txn_id": "TXN-P2-0040",
+          "to_category": "opex",
+          "source": "audit 9.1: retainer relates to ongoing warehouse operations management"
+        }
+      ],
+      "covenants": {
+        "6.1": {
+          "metric": "(revenue + financing_inflow) / (opex + capex)",
+          "operator": ">=",
+          "threshold": 1.2,
+          "definition_verbatim": "отношение суммы выручки и поступлений по финансированию к сумме операционных и капитальных затрат"
+        },
+        "6.2": {
+          "metric": "capex",
+          "operator": "<=",
+          "threshold": 3000000,
+          "definition_verbatim": "расходы по статье «Капитальные затраты» ... за вычетом сумм, переквалифицированных аудитором из данной статьи"
+        },
+        "6.3": {
+          "metric": "related_party / revenue",
+          "operator": "<=",
+          "threshold": 0.03,
+          "definition_verbatim": "Ограниченные платежи в пользу аффилированных лиц не более 0.03x от выручки"
+        }
+      }
+    },
+    "P3": {
+      "account_id": "ACC-7803",
+      "related_party_threshold_pct": 25.0,
+      "related_parties": [
+        "\"Turan Capital\" LLP"
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {},
+      "adjustments": [],
+      "covenants": {
+        "6.1": {
+          "metric": "financing_inflow / (revenue - opex)",
+          "operator": "<=",
+          "threshold": 1.7,
+          "trigger": {
+            "metric": "financing_inflow",
+            "operator": ">",
+            "value": 4000000
+          },
+          "definition_verbatim": "Springing Drawdown Leverage Test: применяется только если совокупные поступления по финансированию превышают $4,000,000.00"
+        },
+        "6.2": {
+          "metric": "revenue",
+          "operator": ">=",
+          "threshold": 6500000,
+          "definition_verbatim": "совокупные поступления по статье «Выручка»"
+        },
+        "6.3": {
+          "metric": "related_party",
+          "operator": "<=",
+          "threshold": 400000,
+          "definition_verbatim": "Ограниченные платежи в пользу связанных сторон по данным KYC"
+        }
+      }
+    },
+    "P4": {
+      "account_id": "ACC-7804",
+      "related_party_threshold_pct": 30.0,
+      "related_parties": [
+        "Aral Capital Partners, LLP"
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {
+        "ebitda_addbacks": 824152.91
+      },
+      "adjustments": [],
+      "covenants": {
+        "6.1": {
+          "metric": "(revenue - opex + ebitda_addbacks) / revenue",
+          "operator": ">=",
+          "threshold": 0.28,
+          "definition_verbatim": "Скорректированная EBITDA = Выручка - Операционные расходы + разовые статьи, признанные подлежащими обратному добавлению; статьи ниже порога существенности ($300,000) не добавляются"
+        },
+        "6.2": {
+          "metric": "capex",
+          "operator": "<=",
+          "threshold": 1800000,
+          "definition_verbatim": "совокупные расходы по статье «Капитальные затраты»"
+        },
+        "6.3": {
+          "metric": "related_party / revenue",
+          "operator": "<=",
+          "threshold": 0.045,
+          "definition_verbatim": "Ограниченные платежи в пользу аффилированных лиц не более 0.04x от выручки",
+          "correction": {
+            "field": "threshold",
+            "from": 0.04,
+            "to": 0.045,
+            "authority": "Challenge organizers",
+            "reason": "3a4aa2dbd6c4.pdf prints 0.04x; the organizers confirmed the agreement loaded incorrectly and the covenant is 0.045x."
+          }
+        }
+      }
+    },
+    "P5": {
+      "account_id": "ACC-7805",
+      "related_party_threshold_pct": 35.0,
+      "related_parties": [
+        "Sarybel Capital LLP."
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {
+        "group_capex": 21847362.55
+      },
+      "adjustments": [],
+      "covenants": {
+        "6.1": {
+          "metric": "group_capex / (revenue - opex)",
+          "operator": "<=",
+          "threshold": 9.0,
+          "definition_verbatim": "отношение совокупных капитальных затрат Группы (по консолидированной отчётности конечной материнской компании) к EBITDA Заёмщика"
+        },
+        "6.2": {
+          "metric": "revenue",
+          "operator": ">=",
+          "threshold": 7500000,
+          "definition_verbatim": "совокупный объём поступлений по статье «Выручка»"
+        },
+        "6.3": {
+          "metric": "related_party",
+          "operator": "<=",
+          "threshold": 260000,
+          "definition_verbatim": "совокупные платежи в адрес аффилированных и связанных сторон"
+        }
+      }
+    },
+    "P6": {
+      "account_id": "ACC-7806",
+      "related_party_threshold_pct": 40.0,
+      "related_parties": [
+        "\"Taraz Holding Group\" LLP"
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {},
+      "adjustments": [],
+      "covenants": {
+        "6.1": {
+          "metric": "related_party / opex",
+          "operator": "<=",
+          "threshold": 0.08,
+          "definition_verbatim": "совокупный объём платежей связанным сторонам не более 0.08x Операционных расходов; платёж учитывается в полном объёме независимо от категории расходов"
+        },
+        "6.2": {
+          "metric": "revenue / (payroll + utilities)",
+          "operator": ">=",
+          "threshold": 3.0,
+          "definition_verbatim": "Выручка не менее 3.00x совокупной величины Расходов на оплату труда и Коммунальных расходов"
+        },
+        "6.3": {
+          "metric": "capex",
+          "operator": "<=",
+          "threshold": 1600000,
+          "definition_verbatim": "совокупный объём расходов по статье «Капитальные затраты»"
+        }
+      }
+    },
+    "P7": {
+      "account_id": "ACC-7807",
+      "related_party_threshold_pct": 32.0,
+      "related_parties": [
+        "Atyrau Holding Group L.L.P."
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {},
+      "adjustments": [
+        {
+          "kind": "amount_override",
+          "txn_id": "TXN-P7-0033",
+          "amount": 486204.19,
+          "source": "treasury memo TRE-ACC-7807-2025: amount absent from the ledger export"
+        }
+      ],
+      "covenants": {
+        "6.1": {
+          "metric": "(taxes + utilities) / (revenue - opex)",
+          "operator": "<=",
+          "threshold": 0.3,
+          "definition_verbatim": "отношение суммы Налогов и Коммунальных расходов к EBITDA; начисленные, но не уплаченные налоги учитываются наравне с уплаченными"
+        },
+        "6.2": {
+          "metric": "revenue",
+          "operator": ">=",
+          "threshold": 8700000,
+          "definition_verbatim": "совокупные поступления по статье «Выручка»"
+        },
+        "6.3": {
+          "metric": "related_party",
+          "operator": "<=",
+          "threshold": 275000,
+          "definition_verbatim": "суммы, предоставленные связанным сторонам, независимо от описания операции в учёте"
+        }
+      }
+    },
+    "P8": {
+      "account_id": "ACC-7808",
+      "related_party_threshold_pct": 38.0,
+      "related_parties": [
+        "Syrdarya Capital Holding, LLP"
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {
+        "severance_liability": 918447.52
+      },
+      "adjustments": [
+        {
+          "kind": "amount_override",
+          "txn_id": "TXN-P8-0031",
+          "amount": 884204.16,
+          "source": "audit 8.1: amount absent from the ledger export"
+        }
+      ],
+      "covenants": {
+        "6.1": {
+          "metric": "payroll + severance_liability",
+          "operator": "<=",
+          "threshold": 4000000,
+          "definition_verbatim": "Совокупные обязательства по персоналу = (а) все расходы на оплату труда за период + (б) совокупное обязательство по программе выходных пособий на 2025-12-31"
+        },
+        "6.2": {
+          "metric": "capex",
+          "operator": "<=",
+          "threshold": 2100000,
+          "definition_verbatim": "совокупный объём расходов по статье «Капитальные затраты»"
+        },
+        "6.3": {
+          "metric": "related_party / revenue",
+          "operator": "<=",
+          "threshold": 0.04,
+          "definition_verbatim": "Ограниченные платежи в пользу аффилированных лиц не более 0.04x от выручки"
+        }
+      }
+    },
+    "P9": {
+      "account_id": "ACC-7809",
+      "related_party_threshold_pct": 34.0,
+      "related_parties": [
+        "Ulytau Capital LLP."
+      ],
+      "unrestricted_subsidiaries": [
+        "Zhezkazgan Processing Holdings LLP"
+      ],
+      "extra": {},
+      "adjustments": [],
+      "covenants": {
+        "6.1": {
+          "metric": "transfer_unrestricted / capex",
+          "operator": "<=",
+          "threshold": 0.15,
+          "definition_verbatim": "стоимость капитальных активов, переданных Неограниченным дочерним организациям, не более 0.15x совокупных капитальных затрат; передача Ограниченной дочерней организации не включается"
+        },
+        "6.2": {
+          "metric": "revenue",
+          "operator": ">=",
+          "threshold": 6900000,
+          "definition_verbatim": "совокупная выручка по статье «Выручка»"
+        },
+        "6.3": {
+          "metric": "related_party",
+          "operator": "<=",
+          "threshold": 225000,
+          "definition_verbatim": "Ограниченные платежи в пользу связанных сторон по досье идентификации клиента"
+        }
+      }
+    },
+    "P10": {
+      "account_id": "ACC-7810",
+      "related_party_threshold_pct": 36.0,
+      "related_parties": [
+        "\"Saryarka Capital Partners\" LLP"
+      ],
+      "unrestricted_subsidiaries": [],
+      "extra": {},
+      "adjustments": [
+        {
+          "kind": "reclassify",
+          "txn_id": "TXN-P10-0017",
+          "to_category": "insurance",
+          "source": "audit 7.1: risk survey performed by the insurer under policy terms"
+        }
+      ],
+      "covenants": {
+        "6.1": {
+          "metric": "insurance / (lease + utilities)",
+          "operator": ">=",
+          "threshold": 0.2,
+          "definition_verbatim": "отношение Страховых премий к сумме Арендных и Коммунальных расходов; реклассификации, рассмотренные и отклонённые аудиторами, в расчёт не принимаются"
+        },
+        "6.2": {
+          "metric": "revenue - max(payroll, taxes)",
+          "operator": ">=",
+          "threshold": 5000000,
+          "definition_verbatim": "Выручка за вычетом наибольшей из величин Расходов на оплату труда и Налогов; меньшая из двух в расчёт не принимается"
+        },
+        "6.3": {
+          "metric": "related_party / revenue",
+          "operator": "<=",
+          "threshold": 0.05,
+          "definition_verbatim": "Ограниченные платежи в пользу аффилированных лиц не более 0.05x от выручки"
+        }
+      }
+    }
+  }
+}

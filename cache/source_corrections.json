@@ -1,0 +1,14 @@
+{
+  "_comment": "Corrections to the source documents themselves, issued by the data owner. These are NOT modelling choices and NOT tuned against ground truth: each records a figure the document prints wrongly, the value the owner states is correct, and who said so. Applied after extraction and only when the extracted value still matches `from`, so a corrected document re-reads cleanly instead of being double-patched.",
+  "corrections": [
+    {
+      "scenario": "P4",
+      "clause": "6.3",
+      "field": "threshold",
+      "from": 0.04,
+      "to": 0.045,
+      "authority": "Challenge organizers",
+      "reason": "Typo in the loan agreement: 3a4aa2dbd6c4.pdf (ACC-7804) prints clause 6.3 as 0.04x of revenue; the organizers confirmed the agreement loaded incorrectly and the threshold is 0.045x, with the answer key holding the correct value."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+[
+  "f3fa6d20c8a1: routed by reading it to ACC-7806 as kyc",
+  "a5cc1400b640: financial_statements linked to ACC-7805 via 'Ekibastuz Power Services JSC'",
+  "B4: Shymkent Fuel Distributors LLP held indirectly -- effective stake 48.0% x 27.3% = 13.104% vs threshold 30.0%",
+  "P3: EUR rate 1.16 from: (9.1) Расчёты с контрагентом «Rheinland Katalyse Service GmbH»: счёт на сумму 72,146.75 EUR урегулирован плате",
+  "P4: ebitda_addbacks = 824,152.91 from 2/3 one-off items at or above 300,000.00 (1 below threshold)",
+  "P5: tangible_net_worth = total_equity - intangible_assets = 80,198,000.00",
+  "P5: group_capex = ppe_closing - ppe_opening + ppe_depreciation = 21,847,362.55",
+  "P6: \"Taraz Holding Group\" LLP ownership_pct=46.8 could not be verified: this borrower has a scanned source with no text layer",
+  "P6: Taraz Kiln Services LLP ownership_pct=38.1 could not be verified: this borrower has a scanned source with no text layer",
+  "P6: related-party threshold 40.0 could not be verified: this borrower has a scanned source with no text layer",
+  "P4 6.3: threshold corrected 0.04 -> 0.045 on the authority of Challenge organizers (document prints the wrong figure)"
+]
