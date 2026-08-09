@@ -38,6 +38,11 @@ CATEGORIES: tuple[str, ...] = (
 # Derived at aggregate time rather than assigned per row.
 DERIVED = ("related_party", "transfer_unrestricted", "transfer_restricted")
 
+# The categories the ledger records as money arriving. aggregates() reads these from positive
+# amounts and every other category from negative ones, so an amount restated by a document has
+# to be signed to match its category or it lands in no aggregate at all.
+INFLOW = ("revenue", "financing_inflow")
+
 # Rules are ordered; the first pattern to match a description wins. They are written
 # against `description` only -- `counterparty` is deliberate noise in this dataset and
 # any rule touching it poisons the aggregates.
@@ -198,7 +203,15 @@ def apply_adjustments(txns: list[Txn], adjustments: list[dict]) -> list[Txn]:
         txn = out[idx]
         kind = adj["kind"]
         if kind == "amount_override":
-            out[idx] = replace(txn, amount=-abs(float(adj["amount"])), amount_missing=False)
+            # A restated amount is a magnitude; its direction comes from what the row is, not
+            # from the document's wording. Signing every override as an outflow silently drops
+            # a restated receipt, because an inflow category only aggregates positive amounts.
+            magnitude = abs(float(adj["amount"]))
+            out[idx] = replace(
+                txn,
+                amount=magnitude if txn.category in INFLOW else -magnitude,
+                amount_missing=False,
+            )
         elif kind == "reclassify":
             out[idx] = replace(txn, category=adj["to_category"])
         elif kind == "exclude":
@@ -270,6 +283,22 @@ def aggregates(
             # borrower's total capital expenditure as well as in its own bucket.
             totals["capex"] = totals.get("capex", 0.0) + -txn.amount
     totals["related_party"] = related
+    # An auditor add-back aggregate, like related_party: the borrower whose auditors disclosed
+    # no qualifying one-off item has none, and zero is that answer rather than a missing one.
+    # A borrower whose auditors did disclose items carries the total in `extra`, applied below.
+    totals.setdefault("ebitda_addbacks", 0.0)
+
+    # Debt is a stock and a ledger records flows, so the only debt a ledger can state is the
+    # financing it recorded net of the principal repaid. That identity is not imposed on the
+    # corpus: an agreement in this set writes its own leverage trigger out in exactly these
+    # terms, (financing_inflow - principal_repayment) / (revenue - opex), so a covenant that
+    # says "total debt" instead is naming the same quantity. Where a document states the
+    # figure outright it wins, because `extra` is applied after this.
+    borrowed = totals.get("financing_inflow", 0.0) - totals.get("principal_repayment", 0.0)
+    totals["total_debt"] = borrowed
+    # Net of cash only when a document discloses a cash balance; with none, net debt is
+    # overstated, which makes a leverage trigger likelier to fire, not less.
+    totals["net_debt"] = borrowed - (extra or {}).get("cash_balance", 0.0)
 
     # Scalars from documents stand on their own; they are not contributions to a ledger total.
     for key, value in (extra or {}).items():

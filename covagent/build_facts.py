@@ -516,10 +516,23 @@ def build(model: str, workers: int, data: Dataset) -> tuple[dict, list[str]]:
         rows = [t for t in ledger if t.scenario == scenario]
         kyc = bundle["kyc"] or {}
         threshold = kyc.get("related_party_threshold_pct")
+        entities = kyc.get("entities", []) or []
         related = []
-        for e in kyc.get("entities", []) or []:
+        # A dossier that prints no ownership threshold is not silent about relatedness -- it
+        # states it outright ("классифицирован как АФФИЛИРОВАННОЕ ЛИЦО ... Платежи данному
+        # контрагенту признаются Ограниченными платежами"). Naming a counterparty is the
+        # classification in that case, so requiring a percentage comparison would discard the
+        # very finding the dossier exists to record. Where a threshold is printed it governs,
+        # and the listing alone decides nothing.
+        if threshold is None and entities:
+            related = [e["name"] for e in entities]
+            warnings.append(
+                f"{scenario}: no ownership threshold printed; treating the {len(related)} "
+                f"counterparty(ies) the KYC names as related parties"
+            )
+        for e in entities if threshold is not None else []:
             printed = e.get("ownership_pct")
-            if threshold is None or printed is None:
+            if printed is None:
                 continue
             effective = float(printed)
             if (through := e.get("held_through_pct")) is not None:
@@ -537,6 +550,27 @@ def build(model: str, workers: int, data: Dataset) -> tuple[dict, list[str]]:
             for s in kyc.get("subsidiaries", []) or []
             if pledge is not None and s.get("pledged_pct") is not None and float(s["pledged_pct"]) < float(pledge)
         ]
+        # A dossier that lists no subsidiary and prints no pledge threshold has not placed the
+        # borrower's subsidiaries inside the security perimeter -- it has said nothing about
+        # them. Treating silence as "all restricted" answers a covenant on transfers to
+        # Unrestricted subsidiaries with 0.00, which asserts no such transfer happened while
+        # the ledger records several. Unclassified transfers are therefore left in scope, and
+        # this is reported: it is an interpretation of a gap, not a reading of a document.
+        if not unrestricted and pledge is None and not (kyc.get("subsidiaries") or []):
+            transferred = sorted(
+                {t.counterparty for t in rows if t.category == "transfer_subsidiary" and t.amount and t.amount < 0}
+            )
+            wants_split = any(
+                "transfer_unrestricted" in (c.get("metric") or "") for c in (bundle["agreement"] or {}).values()
+            )
+            if transferred and wants_split:
+                unrestricted = transferred
+                warnings.append(
+                    f"{scenario}: the KYC classifies no subsidiary, so the "
+                    f"restricted/unrestricted split cannot be made; the {len(transferred)} "
+                    f"counterparty(ies) receiving subsidiary transfers are left in scope rather "
+                    f"than the covenant being answered 0.00"
+                )
 
         adjustments, extra, derived, derivations = [], {}, set(), {}
         for payload in bundle["audit"]:
