@@ -525,3 +525,40 @@ their view of the corpus entirely; P5's source footer listed three documents ins
 The report now distinguishes transcribed from derived, shows the expression with each part and the
 file that prints it, and finds that file by searching the routed texts for the value rather than
 naming a plausible one.
+
+## What a corpus the code had never seen exposed
+
+Five defects survived a corpus scoring 36.00/36 and a level ladder, a leakage scan, four
+perturbations and a from-zero rerun. None is subtle. Each needed an input the published set
+does not contain, which is the whole point: a passing score on one corpus measures that corpus.
+
+**A restated amount was always an outflow.** `amount_override` wrote `-abs(amount)`, and an
+inflow category only aggregates positive rows, so a restated receipt landed in no aggregate.
+Both overrides in the held-out set are receipts. One is a borrower's entire revenue, and its
+covenant read BREACH against a floor of zero. Signed by the row's category now.
+
+**A stem the classifier missed cost a borrower 172.9M of revenue.** The classifier records what
+it learns and reports what it could not place; one stem came back unmatched and the warning was
+demoted to a footnote. Its absence drove a covenant's denominator negative and produced
+`actual = 44.09`. The number was absurd on its face and nothing treated absurdity as a signal.
+
+**`total_debt` resolved to nothing.** A ledger records flows, so the debt it can state is
+financing drawn less principal repaid — which is how one agreement in the set writes its own
+leverage trigger out, in ledger categories, and how another defines it in prose. Four springing
+covenants had been answered on `best_effort`, which assumes the covenant sprang. Three now
+compute. Assuming a trigger fired is not a conservative default; it is a coin flip that reads
+as an answer.
+
+**Silence was read as a finding.** A KYC that prints no ownership threshold still states
+relatedness outright, and one that classifies no subsidiary has not placed anything inside the
+security perimeter. Both were treated as "nothing qualifies" and answered 0.00 — a claim that no
+such payment exists, against a ledger recording several. Four cells.
+
+**Two regexes and a sort key assumed the published set's shape**: a borrower id with a numeric
+suffix (`int(name[1:])` raises on `KC`), and a covenant period written in Russian (one agreement
+in the set is drafted in English). Neither degrades; both fail outright.
+
+The pattern across all five is the same. Every one is a place where the code answered instead of
+refusing, and the answer was indistinguishable from a real one. `confidence` caught four of the
+five as blocking findings before any key existed — the zero-valued cells and the lenient
+fallbacks — which is what that report is for.
