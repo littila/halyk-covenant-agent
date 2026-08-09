@@ -43,6 +43,30 @@ DERIVED = ("related_party", "transfer_unrestricted", "transfer_restricted")
 # to be signed to match its category or it lands in no aggregate at all.
 INFLOW = ("revenue", "financing_inflow")
 
+# Names aggregates() always supplies, so a covenant naming one is answerable. Deliberately not
+# folded into DERIVED: that tuple is quoted in the extraction prompt, and widening the prompt
+# would invalidate every cached reading to tell the model something it does not need to know.
+COMPUTED = ("total_debt", "net_debt", "ebitda_addbacks")
+
+# A group figure a document states outright is used as stated. These are the build-ups to fall
+# back on when it states only the components -- written the way a document in this corpus
+# derives them ("group_total_debt = long_term_borrowings + short_term_borrowings + lease
+# liabilities", "group_ebitda = group_ebit + group_depreciation_amortisation"), not invented
+# here. Debt sums every component present; EBITDA takes one profit line, since a statement may
+# print the same figure under either name and adding both would count it twice.
+DEBT_PARTS = (
+    "group_borrowings_current",
+    "group_borrowings_non_current",
+    "group_finance_lease_obligations_current",
+    "group_finance_lease_obligations_non_current",
+    "borrowings_current",
+    "borrowings_non_current",
+    "lease_liabilities_current",
+    "lease_liabilities_non_current",
+)
+EBIT_NAMES = ("group_ebit", "group_operating_profit")
+DA_NAMES = ("group_depreciation_amortisation", "group_depreciation_and_amortisation")
+
 # Rules are ordered; the first pattern to match a description wins. They are written
 # against `description` only -- `counterparty` is deliberate noise in this dataset and
 # any rule touching it poisons the aggregates.
@@ -303,4 +327,18 @@ def aggregates(
     # Scalars from documents stand on their own; they are not contributions to a ledger total.
     for key, value in (extra or {}).items():
         totals[key] = value
+
+    # Group build-ups, from components only, and never over a figure a document stated. Taken as
+    # magnitudes: a balance-sheet line is transcribed with whichever sign its statement presents,
+    # and depreciation added back to operating profit is an amount, not a direction.
+    if "group_total_debt" not in totals:
+        if parts := [abs(totals[p]) for p in DEBT_PARTS if p in totals]:
+            totals["group_total_debt"] = sum(parts)
+    if "group_ebitda" not in totals:
+        ebit = next((totals[n] for n in EBIT_NAMES if n in totals), None)
+        if ebit is not None:
+            totals["group_ebitda"] = ebit + next((abs(totals[n]) for n in DA_NAMES if n in totals), 0.0)
+    if "group_leverage_ratio" not in totals and totals.get("group_ebitda") and "group_total_debt" in totals:
+        totals["group_leverage_ratio"] = totals["group_total_debt"] / totals["group_ebitda"]
+
     return {k: max(v, 0.0) if k != "related_party" else v for k, v in totals.items()}

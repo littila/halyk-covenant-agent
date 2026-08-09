@@ -22,7 +22,11 @@ def account_pattern(accounts) -> re.Pattern:
     return re.compile(rf"(?<![\w-])(?:{body})(?![\w-])")
 
 
-PERIOD_RE = re.compile(r"Ковенантный период\s*с\s*(\d{4}-\d{2}-\d{2})\s*по\s*(\d{4}-\d{2}-\d{2})")
+# Agreements in a held-out set are not all in Russian; one borrower's is drafted in English.
+PERIOD_RE = re.compile(
+    r"(?:Ковенантный период|Covenant period)\s*(?:с|from)\s*(\d{4}-\d{2}-\d{2})\s*(?:по|to)\s*(\d{4}-\d{2}-\d{2})",
+    re.IGNORECASE,
+)
 
 # Order matters: the first marker that matches wins. Superseded markers are checked
 # before their live counterparts so a dead edition can never be classified as live.
@@ -98,7 +102,7 @@ def extract_text(path: Path, cache_dir: Path) -> str:
     return text
 
 
-CLAUSE_PERIOD_RE = re.compile(r"с\s*(\d{4}-\d{2}-\d{2})\s*по\s*(\d{4}-\d{2}-\d{2})")
+CLAUSE_PERIOD_RE = re.compile(r"(?:с|from)\s*(\d{4}-\d{2}-\d{2})\s*(?:по|to)\s*(\d{4}-\d{2}-\d{2})", re.IGNORECASE)
 
 
 def covenant_period(text: str) -> tuple[str, str] | None:

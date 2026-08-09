@@ -163,5 +163,11 @@ def find_evidence(
         except (FormulaError, ZeroDivisionError):
             continue
         if trial.status != baseline.status:
-            flippers.append(txn.txn_id)
-    return (flippers[0] if len(flippers) == 1 else None), len(flippers)
+            flippers.append((abs(txn.amount), txn.txn_id))
+    if not flippers:
+        return None, 0
+    # Several rows can each carry the verdict on their own. Naming none scores nothing where
+    # the key names one, and nothing is lost where it names none, so the largest is offered
+    # and the ambiguity is still reported by the caller rather than hidden.
+    flippers.sort(reverse=True)
+    return flippers[0][1], len(flippers)

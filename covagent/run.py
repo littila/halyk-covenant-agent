@@ -191,8 +191,10 @@ def derivation(covenant, rows, related, unrestricted, extra, spec, result, evide
         "evidence_txn_id": evidence,
         "evidence_basis": (
             "sole document-implicated row whose removal flips the verdict"
+            if evidence and count == 1
+            else f"{count} rows each flip the verdict on their own; the largest is named"
             if evidence
-            else f"{count} rows flip the verdict; no single determinant"
+            else "no document-implicated row flips the verdict"
         ),
     }
 

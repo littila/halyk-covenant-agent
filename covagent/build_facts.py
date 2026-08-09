@@ -19,7 +19,16 @@ from .extract import (
     triage_document,
     use_workdir,
 )
-from .ledger import CATEGORIES, DERIVED, load_learned, load_ledger, normalise_name
+from .ledger import (
+    CATEGORIES,
+    COMPUTED,
+    DEBT_PARTS,
+    DERIVED,
+    EBIT_NAMES,
+    load_learned,
+    load_ledger,
+    normalise_name,
+)
 from .reconcile import resolve as reconcile_adjustment
 from .taxonomy import classify_stems, unmatched_stems
 
@@ -343,10 +352,18 @@ def unresolved_names(facts: dict) -> dict[str, set[str]]:
     outright -- correctly, but that leaves the cell answered on a guess. This is the list of what
     is missing, computed rather than assumed, and it is what the second pass goes looking for.
     """
-    supplied_by_ledger = set(CATEGORIES) | set(DERIVED)
+    supplied_by_ledger = set(CATEGORIES) | set(DERIVED) | set(COMPUTED)
     gaps: dict[str, set[str]] = {}
     for scenario, spec in facts["scenarios"].items():
         have = supplied_by_ledger | set(spec.get("extra") or {})
+        # Mirror the group build-ups aggregates() performs, so a ratio it can reconstruct from
+        # components present here is not reported as a gap the second pass must go and find.
+        if any(p in have for p in DEBT_PARTS):
+            have.add("group_total_debt")
+        if any(n in have for n in EBIT_NAMES):
+            have.add("group_ebitda")
+        if {"group_total_debt", "group_ebitda"} <= have:
+            have.add("group_leverage_ratio")
         missing: set[str] = set()
         for covenant in (spec.get("covenants") or {}).values():
             missing |= referenced_names(covenant["metric"]) - have
