@@ -74,6 +74,18 @@ class Dataset:
         _ = self.ledger  # raises here, rather than midway through a run
 
 
+def scenario_order(name: str) -> tuple[str, int, str]:
+    """Sort borrower identifiers so B2 comes before B10 and a letters-only id still sorts.
+
+    Splitting on the trailing digits rather than assuming one leading letter is what lets an
+    id like KC through: reading it as a number raises, and a report that cannot sort its rows
+    does not render at all.
+    """
+    head = name.rstrip("0123456789")
+    tail = name[len(head) :]
+    return (head, int(tail) if tail else -1, name)
+
+
 def add_data_argument(parser) -> None:
     parser.add_argument(
         "--data",

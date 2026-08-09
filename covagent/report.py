@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from .build_facts import appears_in
-from .dataset import Dataset, add_data_argument
+from .dataset import Dataset, add_data_argument, scenario_order
 from .documents import load_documents, route
 from .evaluate import Covenant, FormulaError, evaluate_formula, verdict
 from .ledger import apply_adjustments, categorise, load_learned, load_ledger
@@ -658,7 +658,7 @@ apply();
 
 def build_page(derivations, facts, ledger, routing, gt, txns_by_scenario, model, corpus, lang, texts) -> str:
     t = STRINGS[lang]
-    order = sorted(derivations, key=lambda x: (x[0], int(x[1:])))
+    order = sorted(derivations, key=scenario_order)
     index, body = [], []
     breaches = 0
     for scenario in order:

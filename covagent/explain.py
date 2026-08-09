@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .dataset import Dataset, add_data_argument
+from .dataset import Dataset, add_data_argument, scenario_order
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -82,7 +82,7 @@ def main() -> None:
 
     matched = 0
     total = 0
-    for scenario in sorted(derivations, key=lambda s: (s[0], int(s[1:]))):
+    for scenario in sorted(derivations, key=scenario_order):
         docs = {
             f"{kind}:": ", ".join(f"{d.doc_id}.pdf" for d in ds)
             for kind, ds in sorted(routing.get(scenario, {}).items())
