@@ -24,3 +24,10 @@ cache/*.txt
 
 # Convenience copies of corpus samples; the originals are in agentic-bank-public/
 examples/
+
+# Held-out corpora issued by the organisers. agentic-bank-public/ is committed because the
+# challenge published it; anything else is theirs to distribute, not ours. The derived files
+# are already covered by cache/*/ above.
+agentic-bank-private/
+agentic-bank-hidden/
+agentic-bank-final/
