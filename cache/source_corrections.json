@@ -1,9 +1,10 @@
 {
-  "_comment": "Corrections to the source documents themselves, issued by the data owner. These are NOT modelling choices and NOT tuned against ground truth: each records a figure the document prints wrongly, the value the owner states is correct, and who said so. Applied after extraction and only when the extracted value still matches `from`, so a corrected document re-reads cleanly instead of being double-patched.",
+  "_comment": "Corrections to the source documents themselves, issued by the data owner. These are NOT modelling choices and NOT tuned against ground truth: each records a figure the document prints wrongly, the value the owner states is correct, and who said so. Applied after extraction and only when the named `document` is in the corpus being read and the extracted value still matches `from`, so a corrected document re-reads cleanly instead of being double-patched, and a correction issued about one corpus cannot reach a borrower that merely shares its identifier in another.",
   "corrections": [
     {
       "scenario": "P4",
       "clause": "6.3",
+      "document": "3a4aa2dbd6c4.pdf",
       "field": "threshold",
       "from": 0.04,
       "to": 0.045,

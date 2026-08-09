@@ -22,7 +22,7 @@ NOTE = "for information"
 def check_routing(warnings: list[str]) -> list[tuple[str, str]]:
     out = []
     for w in warnings:
-        if "no extracted facts" in w or "no covenant extracted" in w:
+        if "no extracted facts" in w or "no covenant extracted" in w or "no ledger rows at all" in w:
             out.append((SEVERE, w))
     return out
 
@@ -89,8 +89,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="What would have to be true for this answer to be right, checked. Needs no answer key."
     )
-    parser.add_argument("--facts", default=str(ROOT / "cache" / "facts_extracted.json"))
-    parser.add_argument("--extraction-log", default=str(ROOT / "cache" / "extraction_warnings.json"))
+    parser.add_argument("--facts", default=None, help="defaults to <corpus workdir>/facts_extracted.json")
+    parser.add_argument("--extraction-log", default=None, help="defaults to <corpus workdir>/extraction_warnings.json")
     add_data_argument(parser)
     add_level_argument(parser)
     args = parser.parse_args()
@@ -98,7 +98,8 @@ def main() -> None:
     data = Dataset(Path(args.data))
     data.check()
     template = json.loads(data.template.read_text())
-    facts = degrade(json.loads(Path(args.facts).read_text()), args.level)
+    facts_path = Path(args.facts) if args.facts else data.artefact("facts_extracted.json")
+    facts = degrade(json.loads(facts_path.read_text()), args.level)
     meta = {"team": "", "contact_email": "", "model": facts.get("extraction_model", "")}
     submission, warnings, derivations = build_submission(facts, template, meta, data)
 
@@ -114,7 +115,7 @@ def main() -> None:
 
     # Whatever the extraction stage reported about its own reading is part of the picture, and
     # is otherwise printed by a different command and lost.
-    log = Path(args.extraction_log)
+    log = Path(args.extraction_log) if args.extraction_log else data.artefact("extraction_warnings.json")
     if log.exists():
         for w in json.loads(log.read_text()):
             # A quantity a covenant reads and no document states is the one extraction warning

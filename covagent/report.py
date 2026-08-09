@@ -728,25 +728,25 @@ def build_page(derivations, facts, ledger, routing, gt, txns_by_scenario, model,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Write an HTML provenance report for every cell")
-    parser.add_argument("--derivations", default=str(ROOT / "cache" / "derivations.json"))
-    parser.add_argument("--facts", default=str(ROOT / "cache" / "facts_extracted.json"))
+    parser.add_argument("--derivations", default=None, help="defaults to <corpus workdir>/derivations.json")
+    parser.add_argument("--facts", default=None, help="defaults to <corpus workdir>/facts_extracted.json")
     parser.add_argument("--lang", default="en", choices=sorted(STRINGS))
-    parser.add_argument("--out", default=None, help="defaults to cache/provenance[.<lang>].html")
+    parser.add_argument("--out", default=None, help="defaults to <corpus workdir>/provenance[.<lang>].html")
     add_data_argument(parser)
     args = parser.parse_args()
 
     data = Dataset(Path(args.data))
     data.check()
-    derivations = json.loads(Path(args.derivations).read_text())
-    facts = json.loads(Path(args.facts).read_text())
+    derivations = json.loads((Path(args.derivations) if args.derivations else data.artefact("derivations.json")).read_text())
+    facts = json.loads((Path(args.facts) if args.facts else data.artefact("facts_extracted.json")).read_text())
     gt = json.loads(data.ground_truth.read_text())["scenarios"] if data.ground_truth.exists() else {}
 
     from .build_facts import account_map, resolve_unrouted
 
-    load_learned(ROOT / "cache" / "stem_categories.json")
+    load_learned(data.artefact("stem_categories.json"))
     ledger = ledger_index(data.ledger)
     accounts = account_map(data)
-    docs = load_documents(data.documents, ROOT / "cache" / "text", accounts)
+    docs = load_documents(data.documents, data.artefact("text"), accounts)
     # Same second look the build does, so a document attached by reading it -- a scan, or a
     # group report that prints no account -- is listed as a source rather than silently absent.
     resolve_unrouted(docs, facts.get("extraction_model") or "anthropic:claude-opus-5")
@@ -771,7 +771,7 @@ def main() -> None:
         {x.doc_id: x.text for v in routing.values() for ds in v.values() for x in ds},
     )
     suffix = "" if args.lang == "en" else f".{args.lang}"
-    out = Path(args.out) if args.out else ROOT / "cache" / f"provenance{suffix}.html"
+    out = Path(args.out) if args.out else data.artefact(f"provenance{suffix}.html")
     out.write_text(page)
     print(f"wrote {out}  ({len(page) // 1024} KB, {sum(len(v) for v in derivations.values())} cells, {args.lang})")
 

@@ -60,7 +60,7 @@ def measure(facts: dict, template: dict, gt: dict, data: Dataset) -> tuple[float
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Price each part of the pipeline against the key")
-    parser.add_argument("--facts", default=str(ROOT / "cache" / "facts_extracted.json"))
+    parser.add_argument("--facts", default=None, help="defaults to <corpus workdir>/facts_extracted.json")
     add_data_argument(parser)
     args = parser.parse_args()
 
@@ -70,7 +70,7 @@ def main() -> None:
         raise SystemExit(f"{data.ground_truth} is missing; ablation needs an answer key")
     template = json.loads(data.template.read_text())
     gt = json.loads(data.ground_truth.read_text())
-    facts = json.loads(Path(args.facts).read_text())
+    facts = json.loads((Path(args.facts) if args.facts else data.artefact("facts_extracted.json")).read_text())
     total = len(gt["scenarios"]) * len(next(iter(gt["scenarios"].values()))["covenants"])
 
     base, base_ok = measure(facts, template, gt, data)

@@ -15,12 +15,23 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def build_submission(facts: dict, template: dict, meta: dict, data: Dataset) -> tuple[dict, list[str], dict]:
     scenarios = set(template["answers"])
-    load_learned(ROOT / "cache" / "stem_categories.json")
+    load_learned(data.artefact("stem_categories.json"))
     txns = load_ledger(data.ledger, scenarios, facts["fx_rates"])
     submission = json.loads(json.dumps(template))
     submission.update(meta)
     warnings: list[str] = []
     derivations: dict[str, dict] = {}
+
+    # A borrower the ledger never mentions aggregates to 0.00 everywhere and still answers every
+    # cell, so nothing downstream can tell it apart from a borrower who simply spent nothing.
+    # The likeliest cause is a txn_id that does not carry the scenario the template asks about.
+    missing = sorted(scenarios - {t.scenario for t in txns})
+    if missing:
+        seen = sorted({t.txn_id.split("-")[1] for t in load_ledger(data.ledger, None, {})})[:6]
+        warnings.append(
+            f"{', '.join(missing)} carries no ledger rows at all; every aggregate for it is 0.00. "
+            f"The ledger identifies borrowers as {', '.join(seen)}... -- check that matches the template"
+        )
 
     unknown = sorted({t.description.split(" — ")[0] for t in txns if t.category == "uncategorised"})
     if unknown:
@@ -202,8 +213,11 @@ def evidence_candidates(rows, spec: dict, related: set[str], unrestricted: set[s
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build and score the covenant submission")
-    parser.add_argument("--facts", default=str(ROOT / "cache" / "facts.json"))
-    parser.add_argument("--out", default=str(ROOT / "submission.json"))
+    # The extracted set, not the hand-transcribed one: cache/facts.json was written by a human
+    # from this corpus and describes only it, so defaulting to it would answer a different
+    # corpus from the wrong documents without failing.
+    parser.add_argument("--facts", default=None, help="defaults to <corpus workdir>/facts_extracted.json")
+    parser.add_argument("--out", default=None, help="defaults to submission.json for the published corpus")
     parser.add_argument("--team", default="")
     parser.add_argument("--email", default="")
     parser.add_argument("--model", default=None, help="defaults to the model that produced the facts")
@@ -214,7 +228,10 @@ def main() -> None:
 
     data = Dataset(Path(args.data))
     data.check()
-    facts = degrade(json.loads(Path(args.facts).read_text()), args.level)
+    facts_path = Path(args.facts) if args.facts else data.artefact("facts_extracted.json")
+    out = Path(args.out) if args.out else data.submission
+    data.workdir.mkdir(parents=True, exist_ok=True)
+    facts = degrade(json.loads(facts_path.read_text()), args.level)
     template = json.loads(data.template.read_text())
     # The template is where the organisers ask for these, so it wins unless a flag overrides it.
     meta = {
@@ -227,10 +244,10 @@ def main() -> None:
 
     submission, warnings, derivations = build_submission(facts, template, meta, data)
     validate(submission, template)
-    Path(args.out).write_text(json.dumps(submission, indent=2, ensure_ascii=False) + "\n")
-    trail = ROOT / "cache" / "derivations.json"
+    out.write_text(json.dumps(submission, indent=2, ensure_ascii=False) + "\n")
+    trail = data.artefact("derivations.json")
     trail.write_text(json.dumps(derivations, indent=2, ensure_ascii=False) + "\n")
-    print(f"wrote {args.out}")
+    print(f"wrote {out}")
     print(f"wrote {trail}  (audit trail: one derivation per cell)")
     for warning in warnings:
         print(f"  warn: {warning}")

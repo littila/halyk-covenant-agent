@@ -15,6 +15,17 @@ from .ledger import DERIVED as LEDGER_DERIVED
 
 CACHE = Path(__file__).resolve().parent.parent / "cache" / "extraction"
 
+
+def use_workdir(workdir: Path) -> None:
+    """Point the extraction and image caches at one corpus's own directory.
+
+    Cache keys are content hashes, so a wrong hit was never possible; keeping the corpora
+    apart is what makes pruning safe and what stops one corpus's leftovers being mistaken
+    for another's.
+    """
+    global CACHE
+    CACHE = workdir / "extraction"
+
 CATEGORIES = ", ".join(LEDGER_CATEGORIES)
 DERIVED = ", ".join(LEDGER_DERIVED)
 
@@ -407,10 +418,16 @@ def prune_cache() -> int:
     The cache key covers the instructions and the output schema, so every edit to either
     leaves the previous entry behind, unreadable but on disk. Only ever called after a full
     successful build, when USED_CACHE holds every entry the current code would read.
+
+    Superseded means a newer reading of a document this run actually read -- same kind, same
+    borrower, same document, different prompt. An entry for a document outside this corpus is
+    another corpus's cache, not a stale one, and survives: the file names differ only by the
+    trailing digest, so the rest of the name identifies the reading.
     """
     if not USED_CACHE or not CACHE.exists():
         return 0
-    stale = [f for f in CACHE.glob("*.json") if f not in USED_CACHE]
+    read_this_run = {p.stem.rsplit("-", 1)[0] for p in USED_CACHE}
+    stale = [f for f in CACHE.glob("*.json") if f not in USED_CACHE and f.stem.rsplit("-", 1)[0] in read_this_run]
     for f in stale:
         f.unlink()
     return len(stale)

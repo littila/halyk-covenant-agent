@@ -17,13 +17,13 @@ from .extract import (
     prune_cache,
     retrieve_figures,
     triage_document,
+    use_workdir,
 )
 from .ledger import CATEGORIES, DERIVED, load_learned, load_ledger, normalise_name
 from .reconcile import resolve as reconcile_adjustment
 from .taxonomy import classify_stems, unmatched_stems
 
 ROOT = Path(__file__).resolve().parent.parent
-TEXT_CACHE = ROOT / "cache" / "text"
 
 # All read by the same extractor: each may carry adjustments, scalars, figures or a rate.
 AUDIT_KINDS = ("audit_notes", "aup_report", "treasury_memo", "financial_statements")
@@ -398,18 +398,27 @@ def fill_gaps(facts: dict, routing: dict, model: str) -> list[str]:
     return notes
 
 
-def apply_corrections(facts: dict, path: Path) -> list[str]:
+def apply_corrections(facts: dict, path: Path, data: Dataset) -> list[str]:
     """Apply owner-issued corrections to figures the source documents print wrongly.
 
     Distinct from an auditor adjustment, which the documents themselves record. A correction
     says the document is wrong. Each is applied only while the extracted value still matches
     its `from`, so re-reading a fixed document does not silently double-patch it, and each is
     reported with the authority that issued it.
+
+    A correction is about one document, not one borrower identifier. Corpora reuse identifiers,
+    so a correction whose document is absent here is about a different corpus and is skipped.
     """
     if not path.exists():
         return []
     notes = []
     for c in json.loads(path.read_text()).get("corrections", []):
+        if (doc := c.get("document")) and not (data.documents / doc).exists():
+            notes.append(
+                f"correction for {c['scenario']} {c['clause']} skipped: it is about {doc}, "
+                f"which is not in this corpus"
+            )
+            continue
         cov = facts["scenarios"].get(c["scenario"], {}).get("covenants", {}).get(c["clause"])
         if cov is None:
             notes.append(f"correction for {c['scenario']} {c['clause']} has no matching covenant")
@@ -437,8 +446,9 @@ def apply_corrections(facts: dict, path: Path) -> list[str]:
 
 
 def build(model: str, workers: int, data: Dataset) -> tuple[dict, list[str]]:
+    use_workdir(data.workdir)
     acc_to_scenario = account_map(data)
-    docs = load_documents(data.documents, TEXT_CACHE, acc_to_scenario)
+    docs = load_documents(data.documents, data.artefact("text"), acc_to_scenario)
     warnings_pre = resolve_unrouted(docs, model)
     routing = route(docs, acc_to_scenario)
     template = json.loads(data.template.read_text())
@@ -481,7 +491,7 @@ def build(model: str, workers: int, data: Dataset) -> tuple[dict, list[str]]:
 
     facts: dict = {"extraction_model": model, "fx_rates": {}, "scenarios": {}}
     fx_notes: dict[str, list[str]] = {}
-    stem_map = ROOT / "cache" / "stem_categories.json"
+    stem_map = data.artefact("stem_categories.json")
     load_learned(stem_map)
     ledger = load_ledger(data.ledger, set(scenarios), {})
 
@@ -613,7 +623,7 @@ def build(model: str, workers: int, data: Dataset) -> tuple[dict, list[str]]:
             warnings.append(f"{scenario}: FX rate {fallback} recovered by raw-text scan, not transcribed")
     # Second pass, aimed at whatever gaps the first pass left.
     warnings.extend(fill_gaps(facts, routing, model))
-    warnings.extend(apply_corrections(facts, ROOT / "cache" / "source_corrections.json"))
+    warnings.extend(apply_corrections(facts, ROOT / "cache" / "source_corrections.json", data))
     return facts, warnings
 
 
@@ -621,21 +631,23 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Extract covenant facts from the document set")
     parser.add_argument("--model", default="anthropic:claude-opus-5")
     parser.add_argument("--workers", type=int, default=6)
-    parser.add_argument("--out", default=str(ROOT / "cache" / "facts_extracted.json"))
+    parser.add_argument("--out", default=None, help="defaults to <corpus workdir>/facts_extracted.json")
     add_data_argument(parser)
     args = parser.parse_args()
 
     data = Dataset(Path(args.data))
     data.check()
+    data.workdir.mkdir(parents=True, exist_ok=True)
+    out = Path(args.out) if args.out else data.artefact("facts_extracted.json")
     facts, warnings = build(args.model, args.workers, data)
     if pruned := prune_cache():
         warnings.append(f"pruned {pruned} cached extraction(s) left by an earlier prompt or schema")
-    Path(args.out).write_text(json.dumps(facts, indent=2, ensure_ascii=False) + "\n")
+    out.write_text(json.dumps(facts, indent=2, ensure_ascii=False) + "\n")
     # Kept on disk because the confidence report runs from a different command, and on a corpus
     # with no answer key what the reader said about its own reading is most of the evidence.
-    log = ROOT / "cache" / "extraction_warnings.json"
+    log = data.artefact("extraction_warnings.json")
     log.write_text(json.dumps(warnings, indent=2, ensure_ascii=False) + "\n")
-    print(f"wrote {args.out}")
+    print(f"wrote {out}")
     print(f"wrote {log}")
     for warning in warnings:
         print(f"  warn: {warning}")

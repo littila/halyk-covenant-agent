@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT = ROOT / "agentic-bank-public"
+CACHE = ROOT / "cache"
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,33 @@ class Dataset:
     @property
     def ground_truth(self) -> Path:
         return self.root / "ground_truth.json"
+
+    @property
+    def workdir(self) -> Path:
+        """Where this corpus's derived artefacts live: caches, facts, derivations, provenance.
+
+        The published corpus keeps the top-level cache/, where its committed facts and
+        provenance already sit and where the README points. Every other corpus gets its own
+        subdirectory, so a run against a held-out set can neither overwrite nor read what a
+        run against a different one left behind -- the reason to keep them apart is not disk
+        space but that a stale artefact from another corpus is indistinguishable from a fresh
+        one, and would be believed.
+        """
+        root = self.root.resolve()
+        return CACHE if root == DEFAULT.resolve() else CACHE / root.name
+
+    def artefact(self, name: str) -> Path:
+        return self.workdir / name
+
+    @property
+    def submission(self) -> Path:
+        """Where a run against this corpus writes its answer.
+
+        The published corpus writes the submission.json at the repository root, which is the
+        file actually submitted. A held-out corpus keeps its answer beside its own artefacts,
+        so a rehearsal cannot overwrite the answer being submitted.
+        """
+        return ROOT / "submission.json" if self.workdir == CACHE else self.artefact("submission.json")
 
     def check(self) -> None:
         for path in (self.documents, self.template):

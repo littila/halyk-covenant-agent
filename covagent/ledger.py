@@ -141,11 +141,16 @@ def rates_for(fx_rates: dict, scenario: str) -> dict[str, float]:
     return fx_rates or {}
 
 
-def load_ledger(path: Path, scenarios: set[str], fx_rates: dict) -> list[Txn]:
+def load_ledger(path: Path, scenarios: set[str] | None, fx_rates: dict) -> list[Txn]:
+    """Rows for the borrowers named in `scenarios`; every row when that is None.
+
+    The unfiltered form exists to report what identifiers the ledger actually carries when a
+    borrower the template asks about turns out to match none of them.
+    """
     txns = []
     for row in csv.DictReader(path.open()):
         scenario = row["txn_id"].split("-")[1]
-        if scenario not in scenarios:
+        if scenarios is not None and scenario not in scenarios:
             continue
         raw = row["amount"].strip()
         missing = raw == ""

@@ -59,8 +59,13 @@ uv run python -m covagent.run --facts cache/facts_extracted.json
 
 ```bash
 uv run python -m covagent.build_facts --data /путь/к/набору --workers 6
-uv run python -m covagent.run --data /путь/к/набору --out submission.json
+uv run python -m covagent.run --data /путь/к/набору
 ```
+
+Каждый набор держит свои производные файлы отдельно: кэши, факты, выкладку и ответ — в
+`cache/<имя папки набора>/`. Прогон по одному набору не может ни перезаписать, ни прочитать то,
+что осталось от другого. Дело не в месте на диске: чужой файл, оставшийся с прошлого прогона,
+неотличим от свежего, и был бы принят за него.
 
 ### Проверка без ключа
 

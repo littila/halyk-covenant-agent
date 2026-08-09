@@ -57,16 +57,16 @@ def explain_cell(scenario: str, clause: str, d: dict, key: dict | None, sources:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Show the provenance behind every answer")
-    parser.add_argument("--derivations", default=str(ROOT / "cache" / "derivations.json"))
-    parser.add_argument("--facts", default=str(ROOT / "cache" / "facts_extracted.json"))
+    parser.add_argument("--derivations", default=None, help="defaults to <corpus workdir>/derivations.json")
+    parser.add_argument("--facts", default=None, help="defaults to <corpus workdir>/facts_extracted.json")
     parser.add_argument("--cell", help="limit to one cell, e.g. <scenario>:<clause>")
     add_data_argument(parser)
     args = parser.parse_args()
 
     data = Dataset(Path(args.data))
 
-    derivations = json.loads(Path(args.derivations).read_text())
-    facts = json.loads(Path(args.facts).read_text())
+    derivations = json.loads((Path(args.derivations) if args.derivations else data.artefact("derivations.json")).read_text())
+    facts = json.loads((Path(args.facts) if args.facts else data.artefact("facts_extracted.json")).read_text())
     gt_path = data.ground_truth
     gt = json.loads(gt_path.read_text())["scenarios"] if gt_path.exists() else {}
 
@@ -74,7 +74,7 @@ def main() -> None:
     from .documents import load_documents, route
 
     accounts = account_map(data)
-    docs = load_documents(data.documents, ROOT / "cache" / "text", accounts)
+    docs = load_documents(data.documents, data.artefact("text"), accounts)
     # Same second look the build does, so a document attached by reading it -- a scan, or a
     # group report that prints no account -- is listed as a source rather than silently absent.
     resolve_unrouted(docs, facts.get("extraction_model") or "anthropic:claude-opus-5")

@@ -110,7 +110,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Perturb the ledger and see what moves. No re-extraction, so no API calls."
     )
-    parser.add_argument("--facts", default=str(ROOT / "cache" / "facts_extracted.json"))
+    parser.add_argument("--facts", default=None, help="defaults to <corpus workdir>/facts_extracted.json")
     parser.add_argument(
         "--scenario",
         default=None,
@@ -124,7 +124,7 @@ def main() -> None:
     source.check()
     template = json.loads(source.template.read_text())
     gt = json.loads(source.ground_truth.read_text()) if source.ground_truth.exists() else None
-    facts = json.loads(Path(args.facts).read_text())
+    facts = json.loads((Path(args.facts) if args.facts else source.artefact("facts_extracted.json")).read_text())
 
     # Defaulting to a named borrower would silently no-op on a corpus that has no such name,
     # and a perturbation that changes nothing reads as a passing test.
