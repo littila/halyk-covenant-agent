@@ -15,6 +15,9 @@ wheels/
 # corpus, holding that corpus's own caches, facts and answer.
 cache/*/
 cache/*.txt
+# The published corpus's own answer. The submitted one is submission.json at the root, written
+# only by an explicit --out, and that one is tracked.
+cache/submission.json
 
 .DS_Store
 .idea/

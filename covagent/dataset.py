@@ -59,13 +59,15 @@ class Dataset:
 
     @property
     def submission(self) -> Path:
-        """Where a run against this corpus writes its answer.
+        """Where a run against this corpus writes its answer by default.
 
-        The published corpus writes the submission.json at the repository root, which is the
-        file actually submitted. A held-out corpus keeps its answer beside its own artefacts,
-        so a rehearsal cannot overwrite the answer being submitted.
+        Beside that corpus's own artefacts, never at the repository root. The root
+        submission.json is the file actually submitted, and it holds one corpus's answer at a
+        time; defaulting any run there means a rehearsal, a regression check or a stale
+        background job silently replaces the deliverable with a different corpus's answer.
+        Writing it is therefore always deliberate: `--out submission.json`.
         """
-        return ROOT / "submission.json" if self.workdir == CACHE else self.artefact("submission.json")
+        return self.artefact("submission.json")
 
     def check(self) -> None:
         for path in (self.documents, self.template):
