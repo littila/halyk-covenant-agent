@@ -562,3 +562,75 @@ The pattern across all five is the same. Every one is a place where the code ans
 refusing, and the answer was indistinguishable from a real one. `confidence` caught four of the
 five as blocking findings before any key existed — the zero-valued cells and the lenient
 fallbacks — which is what that report is for.
+
+## The period a covenant tests is part of the covenant
+
+Five clauses in the held-out corpus say «за любой отдельный финансовый квартал» — *in any single
+fiscal quarter* — and every one was extracted as a test on the period. A revenue floor met
+comfortably over the year while one quarter fell below it. Marketing capped per quarter, summed
+over four. A concentration ratio reported as a raw revenue figure against a limit of 0.30. Three
+of the five had the wrong status, which costs the whole cell.
+
+None of this is subtle in the source. One clause anticipates the exact mistake and forbids it:
+«соблюдение ковенанта проверяется поквартально, при этом выполнение показателя нарастающим итогом
+или за год не устраняет его нарушение». The extractor had a `quarter` field for a clause naming
+one quarter, and nothing at all for a clause asking about the extreme quarter, which is not a
+quarter it can name.
+
+The first two attempts to fix it made things worse, and the reason is worth keeping. Naming
+`max_quarterly_revenue` as an aggregate invited `max_quarterly_marketing` and
+`min_quarterly_revenue` to be invented by analogy — a vocabulary with one member reads as a
+pattern to extend. The version that worked is a function over an expression,
+`max_quarterly(x)` / `min_quarterly(x)`, evaluated once per quarter and reduced. That was not
+merely tidier: the weakest quarter's EBITDA is `min_quarterly(revenue - opex)`, which no
+per-category name can express, and the clause requiring it is the one my first cut refused by
+restricting the argument to a bare category name.
+
+Reduce only over the quarters the ledger records. A period spanning three quarters must not
+acquire a fourth worth zero, or every floor covenant in it breaches.
+
+## A schema is a claim about what documents can say
+
+`Subsidiary.pledged_pct` was a required float, because the published corpus always prints a
+pledged-asset percentage to compare against a threshold. A held-out dossier states the same fact
+in words instead — "is a designated UNRESTRICTED SUBSIDIARY", «является ОГРАНИЧЕННОЙ ДОЧЕРНЕЙ
+ОРГАНИЗАЦИЕЙ» — and that shape is inexpressible in a model requiring the number. So the extractor
+returned an empty list, and a fallback counted every subsidiary transfer, reporting roughly twice
+the right figure on the two cells that turn on the distinction. One of those dossiers exists only
+as a scanned image with no text layer, so no amount of grepping the corpus would have found it;
+it took reading the page.
+
+The lesson is not "add a field". It is that a required field encodes an assumption about how
+documents phrase things, and the corpus you develop against cannot test that assumption, because
+the schema was fitted to it.
+
+## Four extraction rounds, and why the diff had to decide
+
+Changing the agreement prompt invalidates every agreement reading, so each attempt re-read all 27
+and could move any of the 84 cells. Two rounds were rolled back: one inverted a metric and its
+trigger, one flipped a trigger's operator from `<` to `>=`, both dropped auditor add-backs from an
+EBITDA the clause defines with them, and one silently deleted the second condition of an
+"if and only if both (a) and (b)" test.
+
+What made this survivable was diffing all 84 cells after every round and adjudicating each change
+against the source clause rather than against whichever answer looked familiar. Two results came
+out backwards from first impressions. J1 6.1 looked like a regression -- a status flipping to
+BREACH -- and was a correction, because its EBITDA floor is quarterly and Q3 missed it. J3 6.1
+looked like a fix and was a loss, because «Финансовой задолженности, привлечённой за период» is
+financing drawn, and the new reading used principal repaid, which J3 has none of. Preferring the
+familiar answer would have got both wrong.
+
+## The one path that had no isolation was the one every command takes
+
+Each corpus was given its own directory for derived artefacts, except the published one, which
+kept the top of `cache/` — and that is the corpus every command touches by default. The answer was
+worse: it went to `submission.json` at the repository root, one shared path for one file that
+holds one corpus's answer at a time. A regression check overwrote the submitted answer with the
+published corpus's, and then a background job that had been forgotten did it again, after the
+first had been repaired.
+
+`report` and `explain` also read documents with the model, through `resolve_unrouted`, and neither
+pointed the extraction cache at the corpus first. Both recreated the shared `cache/extraction` and
+`cache/images` that the per-corpus layout exists to remove; a report run had done it minutes
+before it was noticed. An isolation guarantee holds only where every writer honours it, and the
+writers that are not the main pipeline are the ones nobody checks.

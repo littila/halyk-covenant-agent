@@ -6,6 +6,19 @@
 with one owner-issued source correction applied (P4's agreement prints a typo'd threshold).
 Rules adopted without textual support: **0**.
 
+**The held-out corpus is answered and unscoreable.** 27 borrowers, 84 cells, three clause layouts
+(`6.1–6.3`, `6.1–6.4`, `5.1–5.3`), one agreement drafted in English, no answer key. What is known
+without one: 84/84 answered, no `actual` of zero, none answered around its formula, 21 naming a
+determining transaction, and an independent replay from facts plus ledger reproducing the file
+byte for byte. One blocking finding stands — X2 6.3, where two rows each carry the verdict alone.
+
+That corpus found five defects the published one cannot reach, because each needs an input it does
+not contain: a restated receipt signed as an outflow, debt named where no document states a
+balance, add-backs unknown rather than nil, a KYC's silence read as a finding, and a borrower id
+with no numeric suffix. Then a second pass found five clauses testing a quarter that were read as
+testing the period, and a dossier stating a subsidiary designation in prose that the schema could
+not express. Both rounds are written up in `findings.md`.
+
 Confirmed on repeated cache-cleared runs: extraction varies in how it quotes a source, never in
 what it asserts. Three clean re-runs, semantic diff zero each time, submission byte-identical.
 
@@ -57,12 +70,29 @@ regression baseline) and `cache/facts_extracted.json` (what the model reads from
 - [x] `verify_derived`: a computed figure is recomputed from its stored expression, every part it
       names must itself be printed, and a negative result is flagged as a probable sign error
 - [x] Ownership read as printed plus `held_through_pct`; the look-through product done in code
+- [x] `max_quarterly(x)` / `min_quarterly(x)` — a covenant on the extreme quarter evaluates its
+      expression once per quarter and reduces, over the quarters the ledger records only
+- [x] A subsidiary designation stated in prose is read as authoritative over the pledge test, and
+      a KYC declaring relatedness without printing a threshold is not read as declaring nothing
+- [x] A restated amount is signed by its category, so a restated receipt is not booked as an outflow
+- [x] `total_debt` / `net_debt` resolved from the ledger as financing drawn less principal repaid,
+      which is how the agreements that use the term define it
 
 **Portability**
 - [x] `--data` on all seven commands; the ledger is found by pattern, `ground_truth.json` is
       optional, and a missing corpus fails by name rather than writing an empty submission
 - [x] Dry-run against a simulated held-out corpus: renamed ledger, no answer key
 - [x] `team` / `contact_email` taken from the template, which is where the organisers ask for them
+- [x] One directory per corpus under `cache/`, none privileged, and nothing written outside it —
+      the published corpus had been the exception, and it is the one every command touches
+- [x] No run writes the submitted answer by default; the root path is reached only by `--out`
+- [x] `report` and `explain` scope the extraction cache to the corpus before reading documents
+      with the model, instead of recreating the shared directory
+- [x] Source corrections live beside the corpus they correct and name the document they are about
+- [x] Borrower ids sorted without assuming a numeric suffix (`KC` raised on `int(name[1:])`)
+- [x] Covenant periods parsed in English as well as Russian
+- [x] A borrower the ledger never mentions is reported, with the identifiers the ledger does carry
+- [x] Real held-out run: 307 documents, 27 borrowers, 84 cells, keyless
 
 **Tools for a corpus with no answer key**
 - [x] `covagent.confidence` — the checks that stand in for a score, sorted blocking / look-at /
@@ -77,8 +107,8 @@ regression baseline) and `cache/facts_extracted.json` (what the model reads from
 **Docs**
 - [x] `docs/solution.html` — architecture only, in Russian: the seam, six stages, who decides
       what, two namespaces, behaviour under uncertainty, limits. No results in it.
-- [x] `cache/provenance.ru.html` / `.html` — every verdict traced from the printed clause to the
-      transaction that decided it
+- [x] `cache/<corpus>/provenance.ru.html` / `.html` — every verdict traced from the printed clause
+      to the transaction that decided it, with the per-quarter split where a covenant reads one
 - [x] `tasks/findings.md` — dataset findings and robustness findings
 - [x] `README.md` — Russian; the operational entry point, with every command verified against
       `--help`
@@ -90,10 +120,9 @@ regression baseline) and `cache/facts_extracted.json` (what the model reads from
       — `ppe_closing - ppe_opening` without the depreciation charge — is self-consistent and has no
       mechanical detector. Only the `basis` the model quotes, shown in the provenance report, stands
       between it and a wrong answer. A second opinion would share the first one's failure mode.
-- [ ] **The trigger-not-met branch has never executed.** The corpus's one springing covenant has an
-      active trigger, so ablating triggers costs 0.00 and the "condition not met, complied with by
-      default" path is untested end to end. Synthetic covenants over real aggregates would cover it
-      without an answer key, since the expected value is known by construction.
+- [x] ~~The trigger-not-met branch has never executed.~~ Closed by the held-out corpus: of its 12
+      springing covenants, four have dormant triggers, so the "condition not met, complied with by
+      default" path now runs end to end on real data.
 - [ ] **Figure names are an open namespace.** A formula may say `net_debt` while the extractor
       reported `total_net_debt`. The second pass now recovers this by going to look for the name the
       formula used, but the orphan stays in `extra` and nothing reconciles the two.
@@ -103,6 +132,22 @@ regression baseline) and `cache/facts_extracted.json` (what the model reads from
       (*names X, which matches no borrower*) but the fix is a one-line suffix list.
 - [ ] **A consolidated report naming two borrowers** attaches to whichever name resolves first, and
       warns about neither.
+- [ ] **The agreement prompt is one shared surface.** Editing it invalidates all 27 agreement
+      readings, so any wording change can move any of the 84 cells, and two attempts did — one
+      inverting a metric and its trigger, one flipping a trigger's operator. There is no way to
+      re-read a single borrower. The diff-every-cell-and-adjudicate discipline is the control, and
+      it is manual.
+- [ ] **The prompt is narrower than the evaluator.** It tells the model `max_quarterly` takes a
+      bare category name; the evaluator accepts any expression, which is what J1's clause needs.
+      Conservative in the safe direction, but the two should agree, and fixing the wording costs
+      a full re-extraction.
+- [ ] **X2 6.3 has no single determining row.** Two transactions each flip the verdict alone. The
+      larger is named and the basis line says so, which is the best available answer rather than a
+      correct one.
+- [ ] **`min_quarterly` over a category with no rows in some quarter** reads that quarter as zero,
+      because a category absent from a quarter's aggregate is genuinely zero spend. For a floor
+      covenant on a category that is merely unbilled that quarter, zero and unknown are different
+      claims and the code cannot tell them apart.
 
 ## Review
 
@@ -157,6 +202,27 @@ source file that did not hold the figure. Both because `report.py` never ran `re
 the document supplying the number that decides P5 6.1 was missing from its view entirely. An audit
 trail that is wrong about provenance is worse than no audit trail, and nothing but reading it would
 have caught that.
+
+**What the held-out corpus was actually worth.** It scored nothing measurable and found more than
+every self-check combined. The published corpus had passed 36/36, a level ladder, a leakage scan,
+four perturbations and three from-zero reruns while the code carried a restated receipt signed as
+an outflow, five clauses tested over the wrong period, and a schema that could not express a
+subsidiary designation stated in prose. Every one of those needed an input the published corpus
+does not contain. A passing score on one corpus measures that corpus, and the interesting question
+is never "did it pass" but "what would have to be true for it to pass while being wrong".
+
+**The two habits that did the work.** Reading the source clause, and diffing every cell after every
+change. Between them they caught eight wrong cells and, twice, told me my first impression of a
+change was backwards — J1 6.1 looked like a regression and was a correction, J3 6.1 looked like a
+fix and was a loss. Neither would have been visible from a score, and on the held-out corpus there
+is no score to look at.
+
+**Where isolation failed.** The per-corpus layout exempted exactly one corpus: the published one,
+which every command touches by default. The submitted answer was worse — a single shared path that
+a regression check overwrote once and a forgotten background job overwrote again, after the first
+had been repaired. A guarantee that holds everywhere except the busiest path is not a guarantee,
+and `report` and `explain` were quietly violating it too, because they also read documents with the
+model and nobody thinks of them as writers.
 
 **Why the pipeline stayed batched.** Extracting everything and then computing beats answering cells
 on demand here: a borrower's documents serve all three of its clauses, so batching costs 39
