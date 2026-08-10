@@ -44,15 +44,14 @@ class Dataset:
     def workdir(self) -> Path:
         """Where this corpus's derived artefacts live: caches, facts, derivations, provenance.
 
-        The published corpus keeps the top-level cache/, where its committed facts and
-        provenance already sit and where the README points. Every other corpus gets its own
-        subdirectory, so a run against a held-out set can neither overwrite nor read what a
-        run against a different one left behind -- the reason to keep them apart is not disk
-        space but that a stale artefact from another corpus is indistinguishable from a fresh
-        one, and would be believed.
+        One directory per corpus, named after it, with no corpus privileged -- the published
+        one included. A run against one corpus can then neither overwrite nor read what a run
+        against another left behind, and the reason to keep them apart is not disk space but
+        that a stale artefact from another corpus is indistinguishable from a fresh one and
+        would be believed. Exempting the corpus you develop against is how that guarantee gets
+        lost, because that is the corpus every command touches by default.
         """
-        root = self.root.resolve()
-        return CACHE if root == DEFAULT.resolve() else CACHE / root.name
+        return CACHE / self.root.resolve().name
 
     def artefact(self, name: str) -> Path:
         return self.workdir / name

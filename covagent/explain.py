@@ -71,8 +71,13 @@ def main() -> None:
     gt = json.loads(gt_path.read_text())["scenarios"] if gt_path.exists() else {}
 
     from .build_facts import account_map, resolve_unrouted
+    from .extract import use_workdir
     from .documents import load_documents, route
 
+    # resolve_unrouted reads documents with the model, so the cache it writes has to be
+    # this corpus's own -- otherwise a report recreates the shared directory the
+    # per-corpus layout exists to remove.
+    use_workdir(data.workdir)
     accounts = account_map(data)
     docs = load_documents(data.documents, data.artefact("text"), accounts)
     # Same second look the build does, so a document attached by reading it -- a scan, or a

@@ -8,5 +8,6 @@
   "P6: \"Taraz Holding Group\" LLP ownership_pct=46.8 could not be verified: this borrower has a scanned source with no text layer",
   "P6: Taraz Kiln Services LLP ownership_pct=38.1 could not be verified: this borrower has a scanned source with no text layer",
   "P6: related-party threshold 40.0 could not be verified: this borrower has a scanned source with no text layer",
-  "P4 6.3: threshold corrected 0.04 -> 0.045 on the authority of Challenge organizers (document prints the wrong figure)"
+  "P4 6.3: threshold corrected 0.04 -> 0.045 on the authority of Challenge organizers (document prints the wrong figure)",
+  "pruned 12 cached extraction(s) left by an earlier prompt or schema"
 ]

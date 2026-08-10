@@ -281,8 +281,34 @@ a group total, a disclosed liability -- by a snake_case name such as group_capex
 severance_liability, ebitda_addbacks, net_debt, cash_balance. Use the plainest name for the
 concept; the same name must be recoverable from the document that states it.
 
+A clause about "any single quarter" -- любой отдельный/любой финансовый квартал -- tests the
+extreme quarter of the period, which is not a quarter the clause names, so `quarter` stays null
+and the formula says which extreme:
+- `max_quarterly(x)` for a ceiling: "marketing expenses in any single quarter shall not exceed
+  $300,000" is `max_quarterly(marketing) <= 300000`, never bare `marketing`.
+- `min_quarterly(x)` for a floor: "shall not permit revenue for any quarter to fall below
+  $4,000,000" is `min_quarterly(revenue) >= 4000000`, never bare `revenue`, which is the period.
+- A concentration ratio compares the two: "revenue in any quarter shall not exceed 0.30x of
+  revenue for the period" is `max_quarterly(revenue) / revenue <= 0.30`.
+These take one bare category name. There is no other `*_quarterly` name -- do not invent one.
+
 Rules:
-- EBITDA means (revenue - opex) unless the clause defines it otherwise.
+- EBITDA means (revenue - opex) unless the clause defines it otherwise, and a clause that adds
+  auditor-agreed one-off items defines it otherwise: `+ ebitda_addbacks`. Keep any cap the clause
+  puts on them, e.g. "add-backs capped at 5% of revenue" is `+ min(ebitda_addbacks, 0.05 *
+  revenue)`. Where a clause names a ratio "as defined in clause N", that definition governs even
+  if this agreement has no clause N -- find it elsewhere in the agreement and use it as written.
+- Debt drawn and debt repaid are different categories pointing in opposite directions.
+  "Финансовой задолженности, привлечённой за период", "привлечённые за период Поступления от
+  финансирования", "Indebtedness drawn during the period" is `financing_inflow`.
+  `principal_repayment` is money leaving to repay it, and only a clause about repayments reads
+  it on its own -- a Net Debt defined as drawings less repayments is the difference of the two.
+- The `metric` is the quantity the clause caps or floors; the `trigger` is the condition that has
+  to hold before the cap applies. Never swap them, and never drop one.
+- A test reading "if and only if BOTH (a) and (b)" is one covenant: metric (a), trigger (b).
+- "Exceeding X is not itself a default IF Y" means the cap on X applies when Y is FALSE. Write
+  the trigger so it is true in that case: for "no default if premiums are at least $200,000",
+  the trigger is insurance < 200000, not >= 200000.
 - A clause capping "the larger of" two lines is max(a, b); their sum is NOT the metric.
 - "X must be at least T times Y" is metric "X / Y" with operator ">=".
 - A springing/conditional test that only applies above some level goes in `trigger`.

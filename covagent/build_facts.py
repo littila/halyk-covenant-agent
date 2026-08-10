@@ -681,7 +681,8 @@ def build(model: str, workers: int, data: Dataset) -> tuple[dict, list[str]]:
             warnings.append(f"{scenario}: FX rate {fallback} recovered by raw-text scan, not transcribed")
     # Second pass, aimed at whatever gaps the first pass left.
     warnings.extend(fill_gaps(facts, routing, model))
-    warnings.extend(apply_corrections(facts, ROOT / "cache" / "source_corrections.json", data))
+    # Beside the corpus it is about, not in a shared file every corpus reads.
+    warnings.extend(apply_corrections(facts, data.root / "source_corrections.json", data))
     return facts, warnings
 
 

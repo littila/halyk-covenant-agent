@@ -4,7 +4,7 @@ import ast
 import operator
 from dataclasses import dataclass
 
-from .ledger import CATEGORIES, DERIVED, Txn, aggregates
+from .ledger import CATEGORIES, DERIVED, Txn, aggregates, quarterly_totals
 
 BINOPS = {
     ast.Add: operator.add,
@@ -14,6 +14,13 @@ BINOPS = {
 }
 
 FUNCS = {"max": max, "min": min, "abs": abs, "sum": lambda *a: sum(a)}
+
+# Covenants that test the extreme quarter rather than the period. Functions rather than a name
+# per category, so a clause about any category is expressible and there is no vocabulary to guess
+# at. The argument is any expression over categories, evaluated once per quarter and reduced:
+# a clause about the weakest quarter's EBITDA is min_quarterly(revenue - opex), which naming
+# aggregates one at a time could never express.
+QUARTERLY = {"max_quarterly": max, "min_quarterly": min}
 
 COMPARISONS = {
     ">=": operator.ge,
@@ -27,20 +34,27 @@ class FormulaError(Exception):
     pass
 
 
-def evaluate_formula(expr: str, values: dict[str, float], known: set[str] | None = None) -> float:
+def evaluate_formula(
+    expr: str,
+    values: dict[str, float],
+    known: set[str] | None = None,
+    quarterly: dict[str, list[float]] | None = None,
+) -> float:
     """Evaluate a covenant metric over category aggregates.
 
-    Only arithmetic, max/min/abs/sum and bare category names are permitted, so an
-    extractor-authored formula can never execute arbitrary code.
+    Only arithmetic, max/min/abs/sum, max_quarterly/min_quarterly over a category, and bare
+    category names are permitted, so an extractor-authored formula can never execute arbitrary
+    code. `quarterly` holds each category's per-quarter totals, over the quarters the ledger
+    actually covers -- a period spanning three quarters must not acquire a fourth worth zero.
     """
     try:
         tree = ast.parse(expr, mode="eval")
     except SyntaxError as exc:
         raise FormulaError(f"cannot parse {expr!r}") from exc
 
-    def visit(node: ast.AST) -> float:
+    def visit(node: ast.AST, vals: dict[str, float]) -> float:
         if isinstance(node, ast.Expression):
-            return visit(node.body)
+            return visit(node.body, vals)
         if isinstance(node, ast.Constant):
             if not isinstance(node.value, (int, float)):
                 raise FormulaError(f"non-numeric constant {node.value!r}")
@@ -50,23 +64,35 @@ def evaluate_formula(expr: str, values: dict[str, float], known: set[str] | None
             # yields a confident wrong number instead of a visible failure.
             if known is not None and node.id not in known:
                 raise FormulaError(f"unknown identifier {node.id!r} in {expr!r}")
-            return float(values.get(node.id, 0.0))
+            return float(vals.get(node.id, 0.0))
         if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
-            value = visit(node.operand)
+            value = visit(node.operand, vals)
             return value if isinstance(node.op, ast.UAdd) else -value
         if isinstance(node, ast.BinOp) and type(node.op) in BINOPS:
-            left, right = visit(node.left), visit(node.right)
+            left, right = visit(node.left, vals), visit(node.right, vals)
             if isinstance(node.op, ast.Div) and right == 0:
                 raise FormulaError(f"division by zero in {expr!r}")
             return BINOPS[type(node.op)](left, right)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             name = node.func.id
+            if name in QUARTERLY:
+                if len(node.args) != 1:
+                    raise FormulaError(f"{name} takes one expression, in {expr!r}")
+                if not quarterly:
+                    raise FormulaError(f"no quarterly split available for {expr!r}")
+                periods = len(next(iter(quarterly.values())))
+                per_quarter = [
+                    visit(node.args[0], {k: v[i] for k, v in quarterly.items()}) for i in range(periods)
+                ]
+                if not per_quarter:
+                    raise FormulaError(f"no quarters to reduce over in {expr!r}")
+                return float(QUARTERLY[name](per_quarter))
             if name not in FUNCS:
                 raise FormulaError(f"unknown function {name}")
-            return float(FUNCS[name](*(visit(a) for a in node.args)))
+            return float(FUNCS[name](*(visit(a, vals) for a in node.args)))
         raise FormulaError(f"unsupported expression element {ast.dump(node)[:60]}")
 
-    return visit(tree)
+    return visit(tree, values)
 
 
 def referenced_names(expr: str) -> set[str]:
@@ -109,11 +135,14 @@ def compute(
         txns, related_parties, extra, quarter=covenant.quarter, unrestricted_subsidiaries=unrestricted
     )
     known = set(CATEGORIES) | set(DERIVED) | set(extra) | set(totals)
-    actual = abs(evaluate_formula(covenant.metric, totals, known))
+    # Built from the unscoped rows: a clause about the extreme quarter is asking across quarters,
+    # so narrowing to covenant.quarter first would leave it one quarter to choose from.
+    quarterly = quarterly_totals(txns, related_parties, extra, unrestricted)
+    actual = abs(evaluate_formula(covenant.metric, totals, known, quarterly))
     trigger_active = True
     if covenant.trigger:
         trig = covenant.trigger
-        observed = abs(evaluate_formula(trig["metric"], totals, known))
+        observed = abs(evaluate_formula(trig["metric"], totals, known, quarterly))
         trigger_active = COMPARISONS[trig["operator"]](observed, float(trig["value"]))
     return actual, trigger_active
 

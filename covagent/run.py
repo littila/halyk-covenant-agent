@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .dataset import Dataset, add_data_argument
 from .evaluate import Covenant, FormulaError, find_evidence, referenced_names, verdict
-from .ledger import aggregates, apply_adjustments, load_learned, load_ledger, normalise_name
+from .ledger import aggregates, apply_adjustments, load_learned, load_ledger, normalise_name, quarterly_totals
 from .levels import add_level_argument, degrade
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -180,6 +180,9 @@ def derivation(covenant, rows, related, unrestricted, extra, spec, result, evide
         "trigger": covenant.trigger,
         "trigger_active": result.trigger_active,
         "inputs": {n: round(totals.get(n, 0.0), 2) for n in sorted(names)},
+        # A covenant on the extreme quarter answers with one quarter's figure while its inputs
+        # are the period's, which reads as a contradiction unless the split is on the page.
+        "quarterly_inputs": quarterly_shown(covenant, rows, related, unrestricted, extra, names),
         "scalars_from_documents": {k: v for k, v in extra.items() if k in names},
         "contributing_rows": contributing,
         "adjustments_applied": [
@@ -197,6 +200,24 @@ def derivation(covenant, rows, related, unrestricted, extra, spec, result, evide
             else "no document-implicated row flips the verdict"
         ),
     }
+
+
+def quarterly_shown(covenant, rows, related, unrestricted, extra, names) -> dict[str, list[float]]:
+    """Each quarter's figure for the categories a max_quarterly/min_quarterly formula reduces.
+
+    Recorded only when the covenant actually asks across quarters, so an ordinary cell's
+    derivation is not padded with a split nothing in it reads.
+    """
+    formulas = [covenant.metric, (covenant.trigger or {}).get("metric") or ""]
+    if not any("_quarterly(" in f for f in formulas):
+        return {}
+    series = quarterly_totals(rows, related, extra, unrestricted)
+    wanted = {n for n in names if n in series}
+    for formula in formulas:
+        for name in referenced_names(formula):
+            if name in series:
+                wanted.add(name)
+    return {n: [round(v, 2) for v in series[n]] for n in sorted(wanted)}
 
 
 def evidence_candidates(rows, spec: dict, related: set[str], unrestricted: set[str]) -> set[str]:

@@ -210,6 +210,34 @@ def load_ledger(path: Path, scenarios: set[str] | None, fx_rates: dict) -> list[
     return txns
 
 
+def quarterly_totals(
+    txns: list[Txn],
+    related_parties: set[str],
+    extra: dict[str, float] | None = None,
+    unrestricted_subsidiaries: set[str] | None = None,
+) -> dict[str, list[float]]:
+    """Each category's total per quarter, for a covenant that tests the extreme quarter.
+
+    Only over the quarters the ledger actually records for this borrower. Inventing the missing
+    quarters as zero would hand a revenue floor a quarter it never had to meet, and turn every
+    such covenant into a breach.
+    """
+    present = sorted({t.quarter for t in txns if t.amount is not None})
+    series: dict[str, list[float]] = {}
+    for index, quarter in enumerate(present):
+        totals = aggregates(
+            txns, related_parties, extra, quarter=quarter, unrestricted_subsidiaries=unrestricted_subsidiaries
+        )
+        # A category first seen in a later quarter was zero in the earlier ones, so it is
+        # back-filled to the current index before appending. Every series must end the loop the
+        # same length, or an extreme is taken over a different set of quarters per category.
+        for name in totals:
+            series.setdefault(name, [0.0] * index)
+        for name in series:
+            series[name].append(float(totals.get(name, 0.0)))
+    return {k: v for k, v in series.items() if any(v)}
+
+
 def apply_adjustments(txns: list[Txn], adjustments: list[dict]) -> list[Txn]:
     """Apply auditor amount overrides, reclassifications and period exclusions.
 
