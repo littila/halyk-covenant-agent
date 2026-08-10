@@ -562,11 +562,18 @@ def build(model: str, workers: int, data: Dataset) -> tuple[dict, list[str]]:
             if effective >= float(threshold):
                 related.append(e["name"])
         pledge = kyc.get("subsidiary_pledge_threshold_pct")
-        unrestricted = [
-            s["name"]
-            for s in kyc.get("subsidiaries", []) or []
-            if pledge is not None and s.get("pledged_pct") is not None and float(s["pledged_pct"]) < float(pledge)
-        ]
+        subsidiaries = kyc.get("subsidiaries", []) or []
+        unrestricted = []
+        for s in subsidiaries:
+            # A dossier that states the status governs; the pledge test is how a dossier that
+            # states only a percentage says the same thing. Reading the percentage over an
+            # explicit designation would overrule the document with a proxy for it.
+            if (stated := s.get("designation")) is not None:
+                if stated == "unrestricted":
+                    unrestricted.append(s["name"])
+                warnings.append(f"{scenario}: {s['name']} designated {stated} by the KYC")
+            elif pledge is not None and s.get("pledged_pct") is not None and float(s["pledged_pct"]) < float(pledge):
+                unrestricted.append(s["name"])
         # A dossier that lists no subsidiary and prints no pledge threshold has not placed the
         # borrower's subsidiaries inside the security perimeter -- it has said nothing about
         # them. Treating silence as "all restricted" answers a covenant on transfers to

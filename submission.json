@@ -176,8 +176,8 @@
     "G2": {
       "6.1": {
         "status": "BREACH",
-        "actual": 3589760.41,
-        "evidence_txn_id": null
+        "actual": 2409317.86,
+        "evidence_txn_id": "TXN-G2-0024"
       },
       "6.2": {
         "status": "COMPLIANT",
@@ -346,8 +346,8 @@
     "J4": {
       "5.1": {
         "status": "BREACH",
-        "actual": 1643165.84,
-        "evidence_txn_id": null
+        "actual": 822266.56,
+        "evidence_txn_id": "TXN-J4-0074"
       },
       "5.2": {
         "status": "BREACH",

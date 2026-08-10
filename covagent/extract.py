@@ -62,8 +62,13 @@ class Article6(BaseModel):
 
 class Entity(BaseModel):
     name: str = Field(description="Exact name as printed, including quotes and punctuation")
-    ownership_pct: float = Field(
-        description="The percentage printed against this entity, exactly as shown. Never adjust it."
+    ownership_pct: float | None = Field(
+        default=None,
+        description=(
+            "The percentage printed against this entity, exactly as shown. Never adjust it. Null "
+            "when the dossier records the relationship without printing a percentage -- do not "
+            "invent one, and do not put 0 for an unstated figure."
+        ),
     )
     held_through_pct: float | None = Field(
         default=None,
@@ -76,8 +81,20 @@ class Entity(BaseModel):
 
 
 class Subsidiary(BaseModel):
-    name: str
-    pledged_pct: float
+    name: str = Field(description="Exact name as printed, including quotes and punctuation")
+    pledged_pct: float | None = Field(
+        default=None, description="The pledged-asset percentage printed against this subsidiary, if any"
+    )
+    designation: Literal["restricted", "unrestricted"] | None = Field(
+        default=None,
+        description=(
+            "Only when the dossier states the status in words rather than leaving it to a pledge "
+            "percentage: RESTRICTED SUBSIDIARY / UNRESTRICTED SUBSIDIARY, ОГРАНИЧЕННАЯ or "
+            "НЕОГРАНИЧЕННАЯ ДОЧЕРНЯЯ ОРГАНИЗАЦИЯ, or wording placing the entity inside or "
+            "outside the Restricted Group or the collateral perimeter. Copy the stated status; "
+            "never infer it from a percentage."
+        ),
+    )
 
 
 class Kyc(BaseModel):
@@ -277,8 +294,26 @@ KYC_INSTRUCTIONS = """You extract a related-party dossier (KYC) for a Kazakh ban
 Copy entity names exactly as printed, including quotes and punctuation, and copy each percentage
 as printed. Where the dossier says a holding is indirect and that the Group's effective stake is
 what counts, also record the intermediate holder's percentage in `held_through_pct` -- but never
-multiply them yourself. If a section is absent, use an empty list or null. Some tables are supplied as page images rather than text: read every
-attached image before answering."""
+multiply them yourself. If a section is absent, use an empty list or null.
+
+The two lists answer two different questions and are filled independently. The same counterparty
+can belong in both; putting it in one is not a reason to leave it out of the other.
+
+`entities` -- who the borrower is related to. Every counterparty whose relationship to the
+borrower the dossier records, including one it declares an affiliated person or a related party
+in words ("классифицирован как АФФИЛИРОВАННОЕ ЛИЦО", "признаются Ограниченными платежами") with
+no percentage printed anywhere. Leave `ownership_pct` null in that case.
+
+`subsidiaries` -- whose RESTRICTED or UNRESTRICTED status the dossier settles, and only that.
+Either it prints a pledged-asset percentage to compare against the threshold, or it states the
+status in words: "is a designated UNRESTRICTED SUBSIDIARY", "является ОГРАНИЧЕННОЙ ДОЧЕРНЕЙ
+ОРГАНИЗАЦИЕЙ", "sits outside the Restricted Group", "вне периметра обеспечения". Set
+`designation` only from such wording. Being a subsidiary, even a wholly owned one, is not itself
+a designation -- a dossier that calls a counterparty a subsidiary and stops says nothing about
+which side of the perimeter it is on, and guessing would decide a covenant the document did not.
+
+Some dossiers are supplied as page images rather than text: read every attached image before
+answering, and treat what they state exactly as you would printed text."""
 
 
 RETRIEVE_INSTRUCTIONS = """A covenant formula for this borrower references quantities that nothing
